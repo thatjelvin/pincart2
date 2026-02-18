@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Pin, Loader2, ArrowRight } from 'lucide-react';
+import { Search, Pin, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 import { Product } from '../types';
 import { mockSearchProducts } from '../services/api';
 
@@ -14,18 +14,21 @@ const DiscoverPanel: React.FC<DiscoverPanelProps> = ({ onSelectProduct, selected
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Product[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyword.trim()) return;
 
     setLoading(true);
+    setError(null);
     try {
       const data = await mockSearchProducts(keyword);
       setResults(data);
       setHasSearched(true);
     } catch (error) {
       console.error("Search failed", error);
+      setError("Search failed. Please check your API key and try again.");
     } finally {
       setLoading(false);
     }
@@ -88,9 +91,15 @@ const DiscoverPanel: React.FC<DiscoverPanelProps> = ({ onSelectProduct, selected
           </div>
         )}
 
-        {hasSearched && !loading && results.length === 0 && (
+        {hasSearched && !loading && results.length === 0 && !error && (
           <div className="text-center py-10 text-gray-500">
             No results found. Try a different keyword.
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="mx-auto max-w-xs mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
           </div>
         )}
 
