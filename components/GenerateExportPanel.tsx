@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Download, Copy, RefreshCw, FileText, AlertCircle } from 'lucide-react';
+import { Sparkles, Download, Copy, RefreshCw, FileText } from 'lucide-react';
 import { Product, Supplier, GeneratedContent, GenerationTone } from '../types';
 import { mockGenerateContent, mockExportCsv } from '../services/api';
 
@@ -13,18 +13,15 @@ const GenerateExportPanel: React.FC<GenerateExportPanelProps> = ({ product, supp
   const [isGenerating, setIsGenerating] = useState(false);
   const [content, setContent] = useState<GeneratedContent | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'faq' | 'ads'>('details');
-  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!product || !supplier) return;
     setIsGenerating(true);
-    setError(null);
     try {
       const data = await mockGenerateContent(product.title, supplier, tone);
       setContent(data);
     } catch (error) {
       console.error("Generation failed", error);
-      setError("Content generation failed. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -101,7 +98,7 @@ const GenerateExportPanel: React.FC<GenerateExportPanelProps> = ({ product, supp
                 <div className="group relative bg-white p-3 rounded-lg border border-gray-200">
                   <label className="text-[10px] uppercase text-gray-400 font-semibold mb-1 block">Title</label>
                   <p className="text-sm font-medium text-gray-900">{content.optimized_title}</p>
-                  <button onClick={() => navigator.clipboard.writeText(content.optimized_title)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded" title="Copy">
+                  <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-100 rounded" title="Copy">
                     <Copy className="w-3 h-3 text-gray-500" />
                   </button>
                 </div>
@@ -138,12 +135,6 @@ const GenerateExportPanel: React.FC<GenerateExportPanelProps> = ({ product, supp
               </div>
             )}
 
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-full p-6">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
-            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6">

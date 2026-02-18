@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageSearch, Loader2, DollarSign, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
+import { PackageSearch, Loader2, DollarSign, ExternalLink, CheckCircle } from 'lucide-react';
 import { Product, Supplier } from '../types';
 import { mockMatchSuppliers } from '../services/api';
 
@@ -13,21 +13,18 @@ const MatchPanel: React.FC<MatchPanelProps> = ({ selectedProduct, onSelectSuppli
   const [loading, setLoading] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [lastSearchedProductId, setLastSearchedProductId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedProduct && selectedProduct.id !== lastSearchedProductId) {
       const fetchSuppliers = async () => {
         setLoading(true);
         setSuppliers([]); // Clear previous results
-        setError(null);
         try {
           const data = await mockMatchSuppliers(selectedProduct.title);
           setSuppliers(data);
           setLastSearchedProductId(selectedProduct.id);
         } catch (error) {
           console.error("Match failed", error);
-          setError("Supplier matching failed. Please try again.");
         } finally {
           setLoading(false);
         }
@@ -70,12 +67,6 @@ const MatchPanel: React.FC<MatchPanelProps> = ({ selectedProduct, onSelectSuppli
           <div className="flex flex-col items-center justify-center h-48 space-y-3">
             <Loader2 className="w-8 h-8 text-brand-600 animate-spin" />
             <p className="text-sm text-gray-500">Scanning AliExpress & CJ...</p>
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-48">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
-            </div>
           </div>
         ) : (
           <div className="space-y-3">

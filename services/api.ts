@@ -1,24 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Product, Supplier, GeneratedContent, GenerationTone } from '../types';
 
-// Initialize Gemini Client (lazy to avoid crashing when API key is missing)
-let ai: GoogleGenAI | null = null;
-
-function getAI(): GoogleGenAI {
-  if (!ai) {
-    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Gemini API key is not configured. Set GEMINI_API_KEY in your .env.local file.");
-    }
-    ai = new GoogleGenAI({ apiKey });
-  }
-  return ai;
-}
+// Initialize Gemini Client
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- 1. Discover Products (Gemini 3 Flash) ---
 export const mockSearchProducts = async (keyword: string): Promise<Product[]> => {
   try {
-    const response = await getAI().models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `You are a Pinterest trend analyst. Generate 8 specific, trending dropshipping product ideas related to the keyword "${keyword}".
       For each product, provide a short, catchy, descriptive title (max 6 words) and a realistic engagement score (saves/pins count) between 500 and 15000.`,
@@ -60,7 +49,7 @@ export const mockSearchProducts = async (keyword: string): Promise<Product[]> =>
 // --- 2. Match Suppliers (Gemini 3 Flash) ---
 export const mockMatchSuppliers = async (productTitle: string): Promise<Supplier[]> => {
   try {
-    const response = await getAI().models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `You are a dropshipping sourcing agent. Find 3 plausible suppliers for the product "${productTitle}".
       They must be from either 'AliExpress' or 'CJdropshipping'.
@@ -109,7 +98,7 @@ export const mockGenerateContent = async (
   tone: GenerationTone
 ): Promise<GeneratedContent> => {
   try {
-    const response = await getAI().models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: `Write a high-converting product page for the product "${productTitle}".
       Target Audience Tone: ${tone}.
@@ -155,13 +144,6 @@ export const mockGenerateContent = async (
 };
 
 // --- Export Utility ---
-const escapeCsvField = (field: string): string => {
-  if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-    return `"${field.replace(/"/g, '""')}"`;
-  }
-  return field;
-};
-
 export const mockExportCsv = async (content: GeneratedContent, title: string): Promise<void> => {
   console.log("Generating CSV for:", title);
   
@@ -169,22 +151,23 @@ export const mockExportCsv = async (content: GeneratedContent, title: string): P
   const row = [
     title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     content.optimized_title,
-    content.description,
+    `"${content.description.replace(/"/g, '""')}"`, // Basic CSV escaping
     'PinCart AI',
     'dropshipping, trending',
     'TRUE',
     'Title',
     'Default Title'
-  ].map(escapeCsvField);
+  ];
 
-  const csvContent = headers.map(escapeCsvField).join(",") + "\n" + row.join(",");
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  const csvContent = "data:text/csv;charset=utf-8," 
+    + headers.join(",") + "\n" 
+    + row.join(",");
+
+  const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
-  link.setAttribute("href", url);
+  link.setAttribute("href", encodedUri);
   link.setAttribute("download", `${title.replace(/\s+/g, '_')}_export.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };
